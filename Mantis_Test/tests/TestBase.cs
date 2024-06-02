@@ -17,6 +17,7 @@ namespace Mantis_Test
         protected IWebDriver driver;
         protected LoginHelper loginHelper;
         protected ProjectHelper projectHelper;
+        protected APIHelper API;
         protected string baseUrl = "http://localhost/mantisbt-2.26.2/mantisbt-2.26.2/login_page.php";
 
         public TestBase()
