@@ -1,12 +1,9 @@
 ﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
-using OpenQA.Selenium.Firefox;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Threading;
+
 
 namespace Mantis_Test
 {
@@ -18,38 +15,25 @@ namespace Mantis_Test
         {
             this.driver = driver;
         }
+       
         public void GoToPageProject()
         {
-            //GoToMenu();
             GoToSettings();
             GoToProjects();
         }
 
+        private void GoToSettings()
+        {
+            driver.FindElement(By.XPath("//div[@id='sidebar']/ul/li[7]/a/i")).Click();
+        }
+
+        private void GoToProjects()
+        {
+            driver.FindElement(By.XPath("//a[@href=\"/mantisbt-2.26.2/mantisbt-2.26.2/manage_proj_page.php\"]")).Click();
+        }
+
+
         public void AddProject(string v)
-        {
-            AddNewProject(v);
-        }
-
-        public void DeleteProject(string v)
-        {
-            GoToProject(v);
-            Delete();                                    
-        }
-
-        private void Delete()
-        {
-            driver.FindElement(By.XPath("//button[@class='btn btn-primary btn-white btn-round' and @formaction='manage_proj_delete.php']")).Click();
-            driver.FindElement(By.CssSelector("input[type='submit'].btn.btn-primary.btn-white.btn-round")).Click();
-        }
-
-        public void GoToProject(string v)
-        {
-            driver.FindElement(
-                                By.XPath("//div[@id='main-container']/div[2]/div[2]/div/div/div[2]/div[2]/div/div[2]/table/tbody/tr[3]/td/a")
-                                ).Click();
-        }
-
-        public void AddNewProject(string v)
         {
             driver.FindElement(By.XPath("//button[@type='submit']")).Click();
             driver.FindElement(By.Id("project-name")).Click();
@@ -58,15 +42,76 @@ namespace Mantis_Test
             driver.FindElement(By.CssSelector("input[type=\"submit\"].btn.btn-primary.btn-white.btn-round")).Click();
         }
 
-        private void GoToProjects()
+        public void DeleteProject(string v)
         {
-            driver.FindElement(By.XPath("//a[@href=\"/mantisbt-2.26.2/mantisbt-2.26.2/manage_proj_page.php\"]")).Click();
+            PrintAllProjectLinks();
+            int projectIndex = FindProjectIndex(v);
+            GoToProjectByIndex(projectIndex);
+            Delete(); 
         }
 
-        private void GoToSettings()
+        public void Delete()
         {
-            driver.FindElement(By.XPath("//div[@id='sidebar']/ul/li[7]/a/i")).Click();
+            driver.FindElement(By.XPath("//button[@class='btn btn-primary btn-white btn-round' and @formaction='manage_proj_delete.php']")).Click();
+            driver.FindElement(By.CssSelector("input[type='submit'].btn.btn-primary.btn-white.btn-round")).Click();
         }
+
+
+        public int FindProjectIndex(string projectName)
+        {
+            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+            wait.Until(d => d.FindElement(By.XPath("//table[@class='table table-striped table-bordered table-condensed table-hover']/tbody")));
+            IReadOnlyCollection<IWebElement> projectLinks = driver.FindElements(By.XPath("//table[@class='table table-striped table-bordered table-condensed table-hover']/tbody/tr/td/a"));
+            List<IWebElement> projectLinksList = projectLinks.ToList();
+
+            // Ищем проект по имени и возвращаем его индекс
+            for (int i = 0; i < projectLinksList.Count; i++)
+            {
+                if (projectLinksList[i].Text.Trim() == projectName)
+                {
+                    return i;
+                }
+            }
+            // Если проект не найден, возвращаем -1
+            return -1;
+        }
+
+        public void PrintAllProjectLinks()
+        {
+            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+            wait.Until(d => d.FindElement(By.XPath("//table[@class='table table-striped table-bordered table-condensed table-hover']/tbody")));
+            IReadOnlyCollection<IWebElement> projectLinks = driver.FindElements(
+                By.XPath("//table[@class='table table-striped table-bordered table-condensed table-hover']/tbody/tr/td/a"));
+        }
+
+        public void GoToProjectByIndex(int projectIndex)
+        {
+            try
+            {
+                WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(60));
+                wait.Until(d => d.FindElement(By.XPath("//table[@class='table table-striped table-bordered table-condensed table-hover']/tbody")));
+                IReadOnlyCollection<IWebElement> projectLinks = driver.FindElements(
+                    By.XPath("//table[@class='table table-striped table-bordered table-condensed table-hover']/tbody/tr/td/a"));
+                if (projectIndex >= 0 && projectIndex < projectLinks.Count)
+                {
+                    // Переход по индексу
+                    projectLinks.ElementAt(projectIndex).Click();
+                }
+                else
+                {
+                    throw new NoSuchElementException($"Index '{projectIndex}' is out of bounds.");
+                }
+            }
+            catch (NoSuchElementException)
+            {
+                throw new NoSuchElementException("Project link not found.");
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"An error occurred while navigating to project: {ex.Message}", ex);
+            }
+        }
+
 
         private void GoToMenu()
         {
@@ -81,15 +126,6 @@ namespace Mantis_Test
                 }
                 return null;
             });
-        }
-
-        public int GetProjectCount()
-        {
-            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
-            IWebElement projectTable = wait.Until(driver => driver.FindElement(By.XPath("//table[@class='table table-striped table-bordered table-condensed table-hover']/tbody")));
-            IReadOnlyCollection<IWebElement> projectRows = projectTable.FindElements(By.TagName("tr"));
-            Console.WriteLine("Number of project rows found: " + projectRows.Count);
-            return projectRows.Count;
         }
     }
 }
