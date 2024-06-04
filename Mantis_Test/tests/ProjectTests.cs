@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading;
+//using System.Threading;
 using NUnit.Framework;
 
 namespace Mantis_Test
@@ -8,36 +8,61 @@ namespace Mantis_Test
     [TestFixture]
     public class ProjectTests : TestBase
     {
+
+        [Test]
+
+        public void DeleteProjectTest()
+        {
+            string projectNameToDelete = "t2";
+            projectHelper.GoToPageProject();
+            projectHelper.PrintAllProjectLinks();
+            
+            // Найти индекс проекта, если проекта нет - создать
+            int projectIndex = projectHelper.FindProjectIndex(projectNameToDelete);
+            if (projectIndex == -1)
+            {
+                projectHelper.AddProject(projectNameToDelete);
+                projectIndex = projectHelper.FindProjectIndex(projectNameToDelete);
+            }
+
+            // Открыть проект по индексу
+            projectHelper.GoToProjectByIndex(projectIndex);
+            //Удалить проект
+            projectHelper.Delete();
+            //Проверка
+            projectIndex = projectHelper.FindProjectIndex(projectNameToDelete);
+            if (projectIndex != -1)
+            {
+                Assert.Fail("Project 't2' not delete.");
+            }           
+        }
+
+
         [Test]
         public void AddProjectTest()
         {
             projectHelper.GoToPageProject();
-            int projectCountBefore = projectHelper.GetProjectCount();
-            Console.WriteLine("Projects before adding: " + projectCountBefore);
+            projectHelper.PrintAllProjectLinks();
+            string projectNameToAdd = "t2";
+            int projectIndexAdd = projectHelper.FindProjectIndex(projectNameToAdd);
 
-            projectHelper.AddProject("t2");
-            Thread.Sleep(2000);
-
-            int projectCountAfter = projectHelper.GetProjectCount();
-            Console.WriteLine("Projects after adding: " + projectCountAfter);
-            Assert.AreEqual(projectCountBefore + 1, projectCountAfter);
+            // Если такой проект уже есть - удалить
+            if (projectIndexAdd != -1)
+            {
+                projectHelper.DeleteProject(projectNameToAdd);               
+            }
+            //Добавить проект
+            projectHelper.AddProject(projectNameToAdd);
+            //Проверка через индекс по названию проекта
+            projectIndexAdd = projectHelper.FindProjectIndex(projectNameToAdd);                      
+            if (projectIndexAdd == -1)
+            {
+                Assert.Fail("Project 't2' not add.");
+            }
         }
 
-        [Test]
-        public void DeleteProjectTest()
-        {
-            projectHelper.GoToPageProject();
-            int projectCountBefore = projectHelper.GetProjectCount();
-            Console.WriteLine("Projects before adding: " + projectCountBefore);
 
-            projectHelper.DeleteProject("t2");
-
-            int projectCountAfter = projectHelper.GetProjectCount();
-            Console.WriteLine("Projects after adding: " + projectCountAfter);
-            Assert.AreEqual(projectCountBefore - 1, projectCountAfter);
-        }
-
-        [Test]
+            [Test]
         public void AddProjectTestAPI()
         {
             AccountData account = new AccountData("administrator", "root");
